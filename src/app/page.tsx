@@ -63,6 +63,16 @@ export default function SoundSculptorApp() {
           });
         }
       }
+
+      // Load master volume
+      const storedVolume = localStorage.getItem("master-volume");
+      if (storedVolume) {
+        const vol = parseFloat(storedVolume);
+        if (!isNaN(vol)) {
+          setMasterVolume(vol);
+          audioEngine.setMasterVolume(vol);
+        }
+      }
     }
 
     // 2. Load presets from localStorage
@@ -102,6 +112,7 @@ export default function SoundSculptorApp() {
   const handleUpdateMasterVolume = (val: number) => {
     setMasterVolume(val);
     audioEngine.setMasterVolume(val);
+    localStorage.setItem("master-volume", val.toString());
   };
 
   const handleSelectPreset = (newParams: SoundParams) => {

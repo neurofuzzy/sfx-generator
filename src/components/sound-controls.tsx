@@ -132,7 +132,7 @@ export default function SoundControls({ params, setParams, masterVolume, setMast
             </div>
             <Slider
               value={[masterVolume]}
-              min={0.5}
+              min={0.25}
               max={1.0}
               step={0.01}
               onValueChange={([val]) => setMasterVolume(val)}
