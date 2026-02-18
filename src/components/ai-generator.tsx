@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { generateSoundEffectFromDescription } from "@/ai/flows/generate-sound-effect-from-description";
+import { useState, useEffect } from "react";
+import { generateSoundEffectFromDescription, isAiConfigured } from "@/ai/flows/generate-sound-effect-from-description";
 import { SoundParams } from "@/types/audio";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,21 @@ interface AiGeneratorProps {
 export default function AiGenerator({ onGenerated }: AiGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState<boolean | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function checkAvailability() {
+      try {
+        const available = await isAiConfigured();
+        setIsVisible(available);
+      } catch (error) {
+        // In static export environments, the server action might fail entirely
+        setIsVisible(false);
+      }
+    }
+    checkAvailability();
+  }, []);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -42,6 +56,10 @@ export default function AiGenerator({ onGenerated }: AiGeneratorProps) {
       setLoading(false);
     }
   };
+
+  // Don't render anything until we know if AI is available
+  if (isVisible === false) return null;
+  if (isVisible === null) return <div className="h-16 w-full animate-pulse bg-muted/20 rounded-2xl" />;
 
   return (
     <div className="relative w-full">

@@ -3,10 +3,18 @@
  * @fileOverview A Genkit flow for generating sound effect parameters from a text description.
  *
  * - generateSoundEffectFromDescription - A function that generates sound parameters based on a text description.
+ * - isAiConfigured - A function to check if the necessary API key is present.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+
+/**
+ * Checks if the Google AI API key is configured in the environment.
+ */
+export async function isAiConfigured(): Promise<boolean> {
+  return !!process.env.GOOGLE_GENAI_API_KEY;
+}
 
 const GenerateSoundEffectFromDescriptionInputSchema = z
   .string()
