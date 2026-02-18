@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { SoundParams, defaultSoundParams } from "@/types/audio";
 import { audioEngine } from "@/lib/audio-engine";
 import SoundControls from "@/components/sound-controls";
@@ -12,6 +13,7 @@ import { Play, Download, Headphones, Share2, Github } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 
 export default function SoundSculptorApp() {
+  const { toast } = useToast();
   const [params, setParams] = useState<SoundParams>(defaultSoundParams);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -68,7 +70,32 @@ export default function SoundSculptorApp() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="rounded-full">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-full"
+            onClick={() => {
+              const url = window.location.href;
+              const copyToClipboard = () => {
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                toast({ description: "URL copied to clipboard" });
+              };
+              if (typeof window !== 'undefined' && window.navigator.clipboard) {
+                window.navigator.clipboard.writeText(url).then(() => {
+                  toast({ description: "URL copied to clipboard" });
+                }).catch(copyToClipboard);
+              } else {
+                copyToClipboard();
+              }
+            }}
+          >
             <Share2 className="w-4 h-4" />
           </Button>
           <a 
