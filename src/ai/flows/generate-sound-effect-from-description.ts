@@ -26,6 +26,9 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
     .min(0)
     .max(1)
     .describe('The decay time of the sound in seconds (0 to 1).'),
+  envelopeShape: z
+    .enum(['linear', 'exponential'])
+    .describe('The shape of the volume envelope. Exponential is punchier, linear is mechanical.'),
   baseFrequency: z
     .number()
     .min(20)
@@ -36,6 +39,11 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
     .min(0)
     .max(1)
     .describe('Harmonic complexity (0 to 1).'),
+  quantize: z
+    .number()
+    .min(0)
+    .max(48)
+    .describe('Pitch quantization steps per octave. 0 for smooth, 12 for semitones, 2 for coarse steps.'),
   timbre: z
     .string()
     .describe('Tonal quality description.'),
@@ -48,7 +56,7 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
     .number()
     .min(0)
     .max(1)
-    .describe('The volume of the noise layer (0 to 1).'),
+    .describe('The volume of the additive noise layer (0 to 1).'),
   noiseType: z
     .enum(['white', 'pink', 'brown', 'velvet'])
     .describe('The flavor of noise.'),
@@ -103,11 +111,12 @@ const generateSoundEffectPrompt = ai.definePrompt({
 
 Description: {{{this}}}
 
-Guidelines for Scuplting:
-- Use "noiseModulation" for broken, grit, or debris-like sounds. It modifies the oscillator pitch using the noise.
+Guidelines for Sculpting:
+- Use "quantize" for retro, chiptune, or stepped pitch effects. 12 is typical chromatic tuning.
+- Use "envelopeShape" = "exponential" for percussive or natural sounds, "linear" for robotic/synth sounds.
+- Use "noiseModulation" for broken, grit, or debris-like sounds.
 - Use "filterCutoff" and "filterResonance" to glue noise and oscillators together.
-- For "lo-fi" or "dirty" sounds, use brown/white noise with high noiseModulation and low filterCutoff.
-- For "clean" sounds, keep noiseModulation low and filterCutoff high.`,
+- For "lo-fi" sounds, use low filterCutoff and high noiseModulation.`,
 });
 
 const generateSoundEffectFromDescriptionFlow = ai.defineFlow(

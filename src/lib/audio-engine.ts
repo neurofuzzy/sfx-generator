@@ -35,6 +35,14 @@ class AudioEngine {
     this.reverbBuffer = buffer;
   }
 
+  private quantizeFreq(freq: number, steps: number): number {
+    if (steps === 0) return freq;
+    // steps represents subdivisions of an octave (e.g. 12 for semitones)
+    const logFreq = Math.log2(freq / 440);
+    const quantizedLogFreq = Math.round(logFreq * steps) / steps;
+    return 440 * Math.pow(2, quantizedLogFreq);
+  }
+
   private createNoiseBuffer(type: NoiseType): AudioBuffer {
     const sampleRate = this.ctx!.sampleRate;
     const bufferSize = 2 * sampleRate;
@@ -86,7 +94,6 @@ class AudioEngine {
     const now = this.ctx.currentTime;
     const masterGain = this.ctx.createGain();
     
-    // Main Scuplting Filter
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(params.filterCutoff, now);
@@ -95,7 +102,6 @@ class AudioEngine {
     masterGain.connect(filter);
     filter.connect(this.analyser);
 
-    // Routing and Effects
     if (params.reverbAmount > 0 && this.reverbBuffer) {
       const reverb = this.ctx.createConvolver();
       reverb.buffer = this.reverbBuffer;
@@ -119,48 +125,50 @@ class AudioEngine {
 
     const env = this.ctx.createGain();
     env.gain.setValueAtTime(0, now);
-    env.gain.linearRampToValueAtTime(1, now + params.attack);
-    env.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
+    
+    if (params.envelopeShape === 'exponential') {
+      env.gain.exponentialRampToValueAtTime(1, now + Math.max(0.001, params.attack));
+      env.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
+    } else {
+      env.gain.linearRampToValueAtTime(1, now + params.attack);
+      env.gain.linearRampToValueAtTime(0, now + params.attack + params.decay);
+    }
+    
     env.connect(masterGain);
 
-    // Noise layer
-    let noiseGainNode: GainNode | null = null;
+    let noiseModNode: GainNode | null = null;
     if (params.noiseAmount > 0 || params.noiseModulation > 0) {
       const noiseSource = this.ctx.createBufferSource();
       noiseSource.buffer = this.createNoiseBuffer(params.noiseType);
       noiseSource.loop = true;
       
-      noiseGainNode = this.ctx.createGain();
-      noiseGainNode.gain.value = params.noiseAmount;
-      
-      noiseSource.connect(noiseGainNode);
-      noiseGainNode.connect(env); // Additive part
+      const additiveNoiseGain = this.ctx.createGain();
+      additiveNoiseGain.gain.value = params.noiseAmount;
+      noiseSource.connect(additiveNoiseGain);
+      additiveNoiseGain.connect(env);
       
       noiseSource.start(now);
       noiseSource.stop(now + params.attack + params.decay + 1);
 
-      // Destructive/Modulative part: Use noise to jitter the oscillators
       if (params.noiseModulation > 0) {
-        const modGain = this.ctx.createGain();
-        modGain.gain.value = params.noiseModulation * 500; // Large swing for "grit"
-        noiseSource.connect(modGain);
-        this.noiseModGain = modGain; // Temporary ref to connect to osc later
+        noiseModNode = this.ctx.createGain();
+        noiseModNode.gain.value = params.noiseModulation * 500;
+        noiseSource.connect(noiseModNode);
       }
     }
 
-    // Oscillators
     params.waveformPairs.forEach((wf, index) => {
-      const freq = params.baseFrequency * (index === 1 ? (1 + params.harmony) : 1);
+      let freq = params.baseFrequency * (index === 1 ? (1 + params.harmony) : 1);
+      freq = this.quantizeFreq(freq, params.quantize);
+      
       const osc = this.ctx!.createOscillator();
       osc.type = wf as OscillatorType;
       osc.frequency.setValueAtTime(freq, now);
 
-      // Noise Modulation (Destructive Jitter)
-      if (params.noiseModulation > 0 && (this as any).noiseModGain) {
-        (this as any).noiseModGain.connect(osc.frequency);
+      if (noiseModNode) {
+        noiseModNode.connect(osc.frequency);
       }
 
-      // Traditional Vibrato
       if (params.vibratoDepth > 0) {
         const lfo = this.ctx!.createOscillator();
         const lfoGain = this.ctx!.createGain();
@@ -200,10 +208,16 @@ class AudioEngine {
 
     const env = offlineCtx.createGain();
     env.gain.setValueAtTime(0, now);
-    env.gain.linearRampToValueAtTime(1, now + params.attack);
-    env.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
+    if (params.envelopeShape === 'exponential') {
+      env.gain.exponentialRampToValueAtTime(1, now + Math.max(0.001, params.attack));
+      env.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
+    } else {
+      env.gain.linearRampToValueAtTime(1, now + params.attack);
+      env.gain.linearRampToValueAtTime(0, now + params.attack + params.decay);
+    }
     env.connect(masterGain);
 
+    let noiseModNode: GainNode | null = null;
     if (params.noiseAmount > 0 || params.noiseModulation > 0) {
       const noiseBuffer = this.createNoiseBuffer(params.noiseType);
       const noiseSource = offlineCtx.createBufferSource();
@@ -216,21 +230,32 @@ class AudioEngine {
       noiseSource.start(now);
 
       if (params.noiseModulation > 0) {
-        const modGain = offlineCtx.createGain();
-        modGain.gain.value = params.noiseModulation * 500;
-        noiseSource.connect(modGain);
-        (offlineCtx as any).noiseModGain = modGain;
+        noiseModNode = offlineCtx.createGain();
+        noiseModNode.gain.value = params.noiseModulation * 500;
+        noiseSource.connect(noiseModNode);
       }
     }
 
     params.waveformPairs.forEach((wf, index) => {
-      const freq = params.baseFrequency * (index === 1 ? (1 + params.harmony) : 1);
+      let freq = params.baseFrequency * (index === 1 ? (1 + params.harmony) : 1);
+      freq = this.quantizeFreq(freq, params.quantize);
+      
       const osc = offlineCtx.createOscillator();
       osc.type = wf as OscillatorType;
       osc.frequency.setValueAtTime(freq, now);
       
-      if (params.noiseModulation > 0 && (offlineCtx as any).noiseModGain) {
-        (offlineCtx as any).noiseModGain.connect(osc.frequency);
+      if (noiseModNode) {
+        noiseModNode.connect(osc.frequency);
+      }
+
+      if (params.vibratoDepth > 0) {
+        const lfo = offlineCtx.createOscillator();
+        const lfoGain = offlineCtx.createGain();
+        lfo.frequency.value = params.vibratoRate;
+        lfoGain.gain.value = params.vibratoDepth * 50;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start(now);
       }
 
       osc.connect(env);
