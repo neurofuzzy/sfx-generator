@@ -3,14 +3,29 @@ import { SoundParams, WaveformType, NoiseType } from "@/types/audio";
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   private reverbBuffer: AudioBuffer | null = null;
 
   async init() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Create a master chain: [Source] -> [Compressor] -> [Analyser] -> [Destination]
+      this.compressor = this.ctx.createDynamicsCompressor();
       this.analyser = this.ctx.createAnalyser();
+      
       this.analyser.fftSize = 2048;
+      
+      // Configure Compressor for "normalization" and clipping protection
+      this.compressor.threshold.setValueAtTime(-12, this.ctx.currentTime);
+      this.compressor.knee.setValueAtTime(30, this.ctx.currentTime);
+      this.compressor.ratio.setValueAtTime(12, this.ctx.currentTime);
+      this.compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
+      this.compressor.release.setValueAtTime(0.25, this.ctx.currentTime);
+
+      this.compressor.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
+      
       await this.generateReverbBuffer();
     }
     if (this.ctx.state === 'suspended') {
@@ -37,7 +52,6 @@ class AudioEngine {
 
   private quantizeFreq(freq: number, steps: number): number {
     if (steps === 0) return freq;
-    // steps represents subdivisions of an octave (e.g. 12 for semitones)
     const logFreq = Math.log2(freq / 440);
     const quantizedLogFreq = Math.round(logFreq * steps) / steps;
     return 440 * Math.pow(2, quantizedLogFreq);
@@ -89,53 +103,61 @@ class AudioEngine {
   }
 
   play(params: SoundParams) {
-    if (!this.ctx || !this.analyser) return;
+    if (!this.ctx || !this.compressor) return;
 
     const now = this.ctx.currentTime;
+    
+    // Master Gain at 75% to prevent hard digital clipping
     const masterGain = this.ctx.createGain();
+    masterGain.gain.setValueAtTime(0.75, now);
     
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(params.filterCutoff, now);
     filter.Q.setValueAtTime(params.filterResonance, now);
     
+    // Connection: [Oscs/Noise] -> [Env] -> [MasterGain] -> [Filter] -> [Compressor]
     masterGain.connect(filter);
-    filter.connect(this.analyser);
+    filter.connect(this.compressor);
 
+    // Effects
     if (params.reverbAmount > 0 && this.reverbBuffer) {
       const reverb = this.ctx.createConvolver();
       reverb.buffer = this.reverbBuffer;
       const reverbGain = this.ctx.createGain();
-      reverbGain.gain.value = params.reverbAmount;
+      reverbGain.gain.value = params.reverbAmount * 0.5; // Slight reduction to keep mix clean
       filter.connect(reverb);
       reverb.connect(reverbGain);
-      reverbGain.connect(this.analyser);
+      reverbGain.connect(this.compressor);
     }
 
     if (params.echoAmount > 0) {
       const delay = this.ctx.createDelay(2.0);
       delay.delayTime.value = params.echoDelay;
       const feedback = this.ctx.createGain();
-      feedback.gain.value = params.echoAmount * 0.6;
+      feedback.gain.value = params.echoAmount * 0.4;
       filter.connect(delay);
       delay.connect(feedback);
       feedback.connect(delay);
-      delay.connect(this.analyser);
+      delay.connect(this.compressor);
     }
 
     const env = this.ctx.createGain();
     env.gain.setValueAtTime(0, now);
     
+    const peakLevel = 0.6 / (params.waveformPairs.length || 1); // Auto-scale based on oscillator count
+    
     if (params.envelopeShape === 'exponential') {
-      env.gain.exponentialRampToValueAtTime(1, now + Math.max(0.001, params.attack));
+      env.gain.exponentialRampToValueAtTime(peakLevel, now + Math.max(0.001, params.attack));
       env.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
     } else {
-      env.gain.linearRampToValueAtTime(1, now + params.attack);
+      env.gain.linearRampToValueAtTime(peakLevel, now + params.attack);
       env.gain.linearRampToValueAtTime(0, now + params.attack + params.decay);
     }
     
     env.connect(masterGain);
 
+    // Noise Generation
     let noiseModNode: GainNode | null = null;
     if (params.noiseAmount > 0 || params.noiseModulation > 0) {
       const noiseSource = this.ctx.createBufferSource();
@@ -143,7 +165,7 @@ class AudioEngine {
       noiseSource.loop = true;
       
       const additiveNoiseGain = this.ctx.createGain();
-      additiveNoiseGain.gain.value = params.noiseAmount;
+      additiveNoiseGain.gain.value = params.noiseAmount * 0.3; // Calibrate noise level
       noiseSource.connect(additiveNoiseGain);
       additiveNoiseGain.connect(env);
       
@@ -157,6 +179,7 @@ class AudioEngine {
       }
     }
 
+    // Oscillators
     params.waveformPairs.forEach((wf, index) => {
       let freq = params.baseFrequency * (index === 1 ? (1 + params.harmony) : 1);
       freq = this.quantizeFreq(freq, params.quantize);
@@ -185,34 +208,46 @@ class AudioEngine {
       osc.stop(now + params.attack + params.decay);
     });
 
+    // Cleanup
     setTimeout(() => {
         masterGain.disconnect();
         filter.disconnect();
-    }, (params.attack + params.decay + params.echoDelay * 4) * 1000 + 100);
+    }, (params.attack + params.decay + params.echoDelay * 4) * 1000 + 500);
   }
 
   async exportToWav(params: SoundParams): Promise<Blob> {
     const sampleRate = 44100;
     const duration = params.attack + params.decay + (params.echoAmount > 0 ? params.echoDelay * 4 : 0);
-    const offlineCtx = new OfflineAudioContext(1, sampleRate * Math.max(0.1, duration), sampleRate);
+    const offlineCtx = new OfflineAudioContext(1, sampleRate * Math.max(0.1, duration + 1), sampleRate);
 
     const now = 0;
+    
+    // Reproduce master chain in offline context
+    const compressor = offlineCtx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-12, now);
+    compressor.ratio.setValueAtTime(12, now);
+    compressor.connect(offlineCtx.destination);
+
     const masterGain = offlineCtx.createGain();
+    masterGain.gain.setValueAtTime(0.75, now);
+    
     const filter = offlineCtx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(params.filterCutoff, now);
     filter.Q.setValueAtTime(params.filterResonance, now);
     
     masterGain.connect(filter);
-    filter.connect(offlineCtx.destination);
+    filter.connect(compressor);
 
     const env = offlineCtx.createGain();
     env.gain.setValueAtTime(0, now);
+    const peakLevel = 0.6 / (params.waveformPairs.length || 1);
+
     if (params.envelopeShape === 'exponential') {
-      env.gain.exponentialRampToValueAtTime(1, now + Math.max(0.001, params.attack));
+      env.gain.exponentialRampToValueAtTime(peakLevel, now + Math.max(0.001, params.attack));
       env.gain.exponentialRampToValueAtTime(0.001, now + params.attack + params.decay);
     } else {
-      env.gain.linearRampToValueAtTime(1, now + params.attack);
+      env.gain.linearRampToValueAtTime(peakLevel, now + params.attack);
       env.gain.linearRampToValueAtTime(0, now + params.attack + params.decay);
     }
     env.connect(masterGain);
@@ -224,7 +259,7 @@ class AudioEngine {
       noiseSource.buffer = noiseBuffer;
       noiseSource.loop = true;
       const noiseGain = offlineCtx.createGain();
-      noiseGain.gain.value = params.noiseAmount;
+      noiseGain.gain.value = params.noiseAmount * 0.3;
       noiseSource.connect(noiseGain);
       noiseGain.connect(env);
       noiseSource.start(now);
