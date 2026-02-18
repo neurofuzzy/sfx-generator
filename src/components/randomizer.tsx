@@ -8,27 +8,27 @@ import { Input } from "@/components/ui/input";
 import { Dices, RefreshCw } from "lucide-react";
 
 interface RandomizerProps {
-  onRandomize: (params: SoundParams) => void;
+  onRandomize: (params: SoundParams, shouldPlay?: boolean) => void;
 }
 
 export default function Randomizer({ onRandomize }: RandomizerProps) {
   const [seed, setSeed] = useState<number>(() => Math.floor(Math.random() * 999999));
 
-  const applySeed = (targetSeed: number) => {
+  const applySeed = (targetSeed: number, shouldPlay: boolean = true) => {
     // Use the core engine's seeding logic to generate params
     const randomParams = audioEngine.generateParamsFromSeed(targetSeed);
-    onRandomize(randomParams);
+    onRandomize(randomParams, shouldPlay);
   };
 
   const handleRandomize = () => {
     const newSeed = Math.floor(Math.random() * 999999);
     setSeed(newSeed);
-    applySeed(newSeed);
+    applySeed(newSeed, true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      applySeed(seed);
+      applySeed(seed, true);
     }
   };
 
@@ -50,8 +50,10 @@ export default function Randomizer({ onRandomize }: RandomizerProps) {
                 const val = parseInt(e.target.value);
                 if (!isNaN(val)) {
                   setSeed(val);
+                  applySeed(val, false); // Update sliders silently
                 } else if (e.target.value === "") {
                   setSeed(0);
+                  applySeed(0, false);
                 }
               }}
               onKeyDown={handleKeyDown}

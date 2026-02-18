@@ -115,10 +115,12 @@ export default function SoundSculptorApp() {
     localStorage.setItem("master-volume", val.toString());
   };
 
-  const handleSelectPreset = (newParams: SoundParams) => {
+  const handleSelectPreset = (newParams: SoundParams, shouldPlay: boolean = true) => {
     const merged = { ...defaultSoundParams, ...newParams };
     setParams(merged);
-    handlePlay(merged);
+    if (shouldPlay) {
+      handlePlay(merged);
+    }
   };
 
   const handleExport = async () => {
