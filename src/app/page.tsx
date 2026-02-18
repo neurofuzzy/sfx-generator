@@ -82,15 +82,25 @@ export default function SoundSculptorApp() {
                 textarea.style.position = 'fixed';
                 textarea.style.opacity = '0';
                 document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                toast({ description: "URL copied to clipboard" });
+                let success = false;
+                try {
+                  textarea.select();
+                  success = document.execCommand('copy');
+                } finally {
+                  document.body.removeChild(textarea);
+                }
+                if (success) {
+                  toast({ description: "URL copied to clipboard" });
+                } else {
+                  toast({ description: "Failed to copy URL", variant: "destructive" });
+                }
               };
               if (typeof window !== 'undefined' && window.navigator.clipboard) {
                 window.navigator.clipboard.writeText(url).then(() => {
                   toast({ description: "URL copied to clipboard" });
-                }).catch(copyToClipboard);
+                }).catch(() => {
+                  copyToClipboard();
+                });
               } else {
                 copyToClipboard();
               }
