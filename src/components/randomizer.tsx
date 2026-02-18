@@ -15,12 +15,13 @@ export default function Randomizer({ onRandomize }: RandomizerProps) {
   const [seed, setSeed] = useState<number>(() => Math.floor(Math.random() * 999999));
 
   const handleRandomize = () => {
-    // Use the core engine's seeding logic to ensure UI and Client parity
-    const randomParams = audioEngine.generateParamsFromSeed(seed);
-    onRandomize(randomParams);
+    // Generate a fresh random seed
+    const newSeed = Math.floor(Math.random() * 999999);
+    setSeed(newSeed);
     
-    // Increment seed for the next click if user wants another variation
-    setSeed(s => s + 1);
+    // Use the core engine's seeding logic to generate params
+    const randomParams = audioEngine.generateParamsFromSeed(newSeed);
+    onRandomize(randomParams);
   };
 
   return (
@@ -37,7 +38,12 @@ export default function Randomizer({ onRandomize }: RandomizerProps) {
             <Input
               type="number"
               value={seed}
-              onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 0;
+                setSeed(val);
+                // Optionally generate params immediately when typing, 
+                // but usually user hits enter or randomize.
+              }}
               className="pl-12 h-10 bg-white/5 border-white/10 rounded-xl font-mono text-sm focus:ring-accent/50"
             />
           </div>
