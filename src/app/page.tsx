@@ -70,6 +70,10 @@ export default function SoundSculptorApp() {
     URL.revokeObjectURL(url);
   };
 
+  const handleTabChange = (value: string) => {
+    audioEngine.stopAll();
+  };
+
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -100,7 +104,7 @@ export default function SoundSculptorApp() {
         </div>
       </header>
 
-      <Tabs defaultValue="sculptor" className="w-full">
+      <Tabs defaultValue="sculptor" className="w-full" onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/20 border border-white/5 rounded-2xl p-1">
           <TabsTrigger value="sculptor" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2">
             <Music className="w-4 h-4" />

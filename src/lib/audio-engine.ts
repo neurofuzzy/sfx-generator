@@ -12,6 +12,7 @@ class AudioEngine {
   private compressor: DynamicsCompressorNode | null = null;
   private reverbBuffer: AudioBuffer | null = null;
   private compositionLoopInterval: any = null;
+  private activeNodes: Set<AudioScheduledSourceNode> = new Set();
 
   async init() {
     if (!this.ctx) {
@@ -119,6 +120,13 @@ class AudioEngine {
     return buffer;
   }
 
+  private trackNode(node: AudioScheduledSourceNode) {
+    this.activeNodes.add(node);
+    node.onended = () => {
+      this.activeNodes.delete(node);
+    };
+  }
+
   private triggerNote(ctx: BaseAudioContext, time: number, freq: number, params: SoundParams, destination: AudioNode, gainScale: number = 1.0) {
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, time);
@@ -161,6 +169,7 @@ class AudioEngine {
       
       noiseSource.start(time);
       noiseSource.stop(time + duration + 0.1);
+      this.trackNode(noiseSource);
     }
 
     params.waveformPairs.forEach((wf, index) => {
@@ -186,11 +195,13 @@ class AudioEngine {
         lfoGain.connect(osc.frequency);
         lfo.start(time);
         lfo.stop(time + duration);
+        this.trackNode(lfo);
       }
 
       osc.connect(env);
       osc.start(time);
       osc.stop(time + duration);
+      this.trackNode(osc);
     });
   }
 
@@ -216,6 +227,7 @@ class AudioEngine {
       lfo.start(now);
       const totalDuration = (params.sequenceSteps * (60 / params.sequenceBpm)) + params.attack + params.decay + 5;
       lfo.stop(now + totalDuration);
+      this.trackNode(lfo);
     }
     
     const filter = this.ctx.createBiquadFilter();
@@ -294,6 +306,19 @@ class AudioEngine {
     }, totalDuration * 1000);
   }
 
+  stopAll() {
+    this.stopComposition();
+    this.activeNodes.forEach(node => {
+      try {
+        node.stop();
+        node.disconnect();
+      } catch (e) {
+        // Node might already be stopped
+      }
+    });
+    this.activeNodes.clear();
+  }
+
   stopComposition() {
     if (this.compositionLoopInterval) {
       clearInterval(this.compositionLoopInterval);
@@ -309,14 +334,14 @@ class AudioEngine {
     const stepDuration = 60 / composition.bpm / 4; // 16th notes
     
     const runStep = () => {
-      const nextTime = this.ctx!.currentTime + 0.1;
+      if (!this.ctx) return;
+      const nextTime = this.ctx.currentTime + 0.1;
       onStep(currentStep);
 
       composition.tracks.forEach(track => {
         if (track.steps[currentStep] && track.soundId) {
           const sound = library.find(s => s.id === track.soundId);
           if (sound) {
-            // Get note from the specific step
             const noteName = track.stepNotes[currentStep];
             const freq = NOTE_FREQUENCIES[noteName] || 440;
             this.play(sound, 0.1, freq);
@@ -334,7 +359,7 @@ class AudioEngine {
   async exportCompositionToWav(composition: CompositionState, library: SoundParams[]): Promise<Blob> {
     const sampleRate = 44100;
     const stepDuration = 60 / composition.bpm / 4;
-    const totalDuration = stepDuration * 8 + 2; // Full loop + 2s decay
+    const totalDuration = stepDuration * 8 + 2; 
     
     const offlineCtx = new OfflineAudioContext(1, Math.ceil(sampleRate * totalDuration), sampleRate);
     const compressor = offlineCtx.createDynamicsCompressor();
@@ -351,7 +376,6 @@ class AudioEngine {
           const noteName = track.stepNotes[stepIdx];
           const freq = NOTE_FREQUENCIES[noteName] || 440;
           
-          // Re-implementing simplified play chain for offline context
           const masterGain = offlineCtx.createGain();
           masterGain.gain.value = 0.5;
           masterGain.connect(compressor);

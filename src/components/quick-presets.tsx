@@ -3,7 +3,7 @@
 import { GAME_PRESETS, SoundParams } from "@/types/audio";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Zap, ArrowUp, Bomb, Coins, Repeat, Target, Star, Skull, Drum, Speaker, Keyboard, Waves, Music } from "lucide-react";
+import { Zap, ArrowUp, Bomb, Coins, Repeat, Target, Star, Skull, Drum, Speaker, Keyboard, Waves, Music, Disc } from "lucide-react";
 
 interface QuickPresetsProps {
   onSelect: (params: SoundParams) => void;
@@ -12,6 +12,8 @@ interface QuickPresetsProps {
 const presetIcons: Record<string, any> = {
   // Musical Instruments
   "Deep Kick": Drum,
+  "Snare": Music,
+  "Cymbal": Disc,
   "Acid Bass": Speaker,
   "Soft Piano": Keyboard,
   "Ethereal Pad": Waves,
