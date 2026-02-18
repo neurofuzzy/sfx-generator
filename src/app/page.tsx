@@ -7,6 +7,7 @@ import SoundControls from "@/components/sound-controls";
 import AudioVisualizer from "@/components/audio-visualizer";
 import AiGenerator from "@/components/ai-generator";
 import Randomizer from "@/components/randomizer";
+import QuickPresets from "@/components/quick-presets";
 import Composer from "@/components/composer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -142,6 +143,8 @@ export default function SoundSculptorApp() {
               </div>
 
               <Randomizer onRandomize={handleSelectPreset} />
+              
+              <QuickPresets onSelect={handleSelectPreset} />
 
               <div className="space-y-4">
                   <SoundControls 
