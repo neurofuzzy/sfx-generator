@@ -1,6 +1,6 @@
 "use client";
 
-import { SoundParams, WaveformType, NoiseType, EnvelopeShape } from "@/types/audio";
+import { SoundParams, WaveformType, NoiseType, EnvelopeShape, FilterType } from "@/types/audio";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,19 @@ export default function SoundControls({ params, setParams }: SoundControlsProps)
           <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Sculptor (Filter)</h3>
         </div>
         <div className="space-y-4">
+          <div className="flex gap-1">
+            {(["lowpass", "highpass", "bandpass"] as FilterType[]).map((type) => (
+              <Button
+                key={type}
+                size="sm"
+                variant={params.filterType === type ? "default" : "outline"}
+                className="capitalize flex-1 text-[10px] h-7"
+                onClick={() => updateParam("filterType", type)}
+              >
+                {type === 'lowpass' ? 'Low Pass' : type === 'highpass' ? 'High Pass' : 'Band Pass'}
+              </Button>
+            ))}
+          </div>
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <Label>Cutoff</Label>

@@ -1,6 +1,7 @@
 export type WaveformType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type NoiseType = 'white' | 'brown' | 'pink' | 'velvet';
 export type EnvelopeShape = 'linear' | 'exponential';
+export type FilterType = 'lowpass' | 'highpass' | 'bandpass';
 
 export interface SoundParams {
   id?: string;
@@ -16,6 +17,7 @@ export interface SoundParams {
   noiseAmount: number;
   noiseType: NoiseType;
   noiseModulation: number; // Jitters the oscillator frequency
+  filterType: FilterType;
   filterCutoff: number;    // Glues the sound together
   filterResonance: number; // Adds that "sculpted" peak
   vibratoDepth: number;
@@ -39,6 +41,7 @@ export const defaultSoundParams: SoundParams = {
   noiseAmount: 0.1,
   noiseType: "white",
   noiseModulation: 0.2,
+  filterType: 'lowpass',
   filterCutoff: 2000,
   filterResonance: 5,
   vibratoDepth: 0,

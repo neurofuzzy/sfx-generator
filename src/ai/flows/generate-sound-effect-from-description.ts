@@ -65,6 +65,9 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
     .min(0)
     .max(1)
     .describe('How much the noise jitters/breaks the oscillator pitch (0 to 1). Higher for broken/debris sounds.'),
+  filterType: z
+    .enum(['lowpass', 'highpass', 'bandpass'])
+    .describe('The type of filter to use. Lowpass is standard for warming sounds.'),
   filterCutoff: z
     .number()
     .min(20)
@@ -115,6 +118,9 @@ Guidelines for Sculpting:
 - Use "quantize" for retro, chiptune, or stepped pitch effects. 12 is typical chromatic tuning.
 - Use "envelopeShape" = "exponential" for percussive or natural sounds, "linear" for robotic/synth sounds.
 - Use "noiseModulation" for broken, grit, or debris-like sounds.
+- Use "filterType" = "lowpass" for muffled, warm, or underwater sounds.
+- Use "filterType" = "highpass" for thin, distant, or airy sounds.
+- Use "filterType" = "bandpass" for telephonic or nasal sounds.
 - Use "filterCutoff" and "filterResonance" to glue noise and oscillators together.
 - For "lo-fi" sounds, use low filterCutoff and high noiseModulation.`,
 });

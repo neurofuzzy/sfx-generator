@@ -112,7 +112,7 @@ class AudioEngine {
     masterGain.gain.setValueAtTime(0.75, now);
     
     const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
+    filter.type = params.filterType || 'lowpass';
     filter.frequency.setValueAtTime(params.filterCutoff, now);
     filter.Q.setValueAtTime(params.filterResonance, now);
     
@@ -135,7 +135,6 @@ class AudioEngine {
       const delay = this.ctx.createDelay(2.0);
       delay.delayTime.setValueAtTime(params.echoDelay, now);
       const feedback = this.ctx.createGain();
-      // Increase multiplier from 0.4 to 0.8 for multiple repeats
       feedback.gain.setValueAtTime(params.echoAmount * 0.8, now);
       filter.connect(delay);
       delay.connect(feedback);
@@ -218,7 +217,6 @@ class AudioEngine {
 
   async exportToWav(params: SoundParams): Promise<Blob> {
     const sampleRate = 44100;
-    // Longer duration for export to capture echo tail
     const duration = params.attack + params.decay + (params.echoAmount > 0 ? params.echoDelay * 10 : 0);
     const offlineCtx = new OfflineAudioContext(1, Math.ceil(sampleRate * Math.max(0.1, duration + 1)), sampleRate);
 
@@ -233,14 +231,13 @@ class AudioEngine {
     masterGain.gain.setValueAtTime(0.75, now);
     
     const filter = offlineCtx.createBiquadFilter();
-    filter.type = 'lowpass';
+    filter.type = params.filterType || 'lowpass';
     filter.frequency.setValueAtTime(params.filterCutoff, now);
     filter.Q.setValueAtTime(params.filterResonance, now);
     
     masterGain.connect(filter);
     filter.connect(compressor);
 
-    // Echo for export
     if (params.echoAmount > 0) {
       const delay = offlineCtx.createDelay(2.0);
       delay.delayTime.setValueAtTime(params.echoDelay, now);
