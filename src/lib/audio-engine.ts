@@ -125,7 +125,7 @@ class AudioEngine {
       const reverb = this.ctx.createConvolver();
       reverb.buffer = this.reverbBuffer;
       const reverbGain = this.ctx.createGain();
-      reverbGain.gain.value = params.reverbAmount * 0.5; // Slight reduction to keep mix clean
+      reverbGain.gain.value = params.reverbAmount * 0.5;
       filter.connect(reverb);
       reverb.connect(reverbGain);
       reverbGain.connect(this.compressor);
@@ -133,9 +133,10 @@ class AudioEngine {
 
     if (params.echoAmount > 0) {
       const delay = this.ctx.createDelay(2.0);
-      delay.delayTime.value = params.echoDelay;
+      delay.delayTime.setValueAtTime(params.echoDelay, now);
       const feedback = this.ctx.createGain();
-      feedback.gain.value = params.echoAmount * 0.4;
+      // Increase multiplier from 0.4 to 0.8 for multiple repeats
+      feedback.gain.setValueAtTime(params.echoAmount * 0.8, now);
       filter.connect(delay);
       delay.connect(feedback);
       feedback.connect(delay);
@@ -145,7 +146,7 @@ class AudioEngine {
     const env = this.ctx.createGain();
     env.gain.setValueAtTime(0, now);
     
-    const peakLevel = 0.6 / (params.waveformPairs.length || 1); // Auto-scale based on oscillator count
+    const peakLevel = 0.6 / (params.waveformPairs.length || 1);
     
     if (params.envelopeShape === 'exponential') {
       env.gain.exponentialRampToValueAtTime(peakLevel, now + Math.max(0.001, params.attack));
@@ -165,7 +166,7 @@ class AudioEngine {
       noiseSource.loop = true;
       
       const additiveNoiseGain = this.ctx.createGain();
-      additiveNoiseGain.gain.value = params.noiseAmount * 0.3; // Calibrate noise level
+      additiveNoiseGain.gain.value = params.noiseAmount * 0.3;
       noiseSource.connect(additiveNoiseGain);
       additiveNoiseGain.connect(env);
       
@@ -212,17 +213,17 @@ class AudioEngine {
     setTimeout(() => {
         masterGain.disconnect();
         filter.disconnect();
-    }, (params.attack + params.decay + params.echoDelay * 4) * 1000 + 500);
+    }, (params.attack + params.decay + params.echoDelay * 10) * 1000 + 500);
   }
 
   async exportToWav(params: SoundParams): Promise<Blob> {
     const sampleRate = 44100;
-    const duration = params.attack + params.decay + (params.echoAmount > 0 ? params.echoDelay * 4 : 0);
-    const offlineCtx = new OfflineAudioContext(1, sampleRate * Math.max(0.1, duration + 1), sampleRate);
+    // Longer duration for export to capture echo tail
+    const duration = params.attack + params.decay + (params.echoAmount > 0 ? params.echoDelay * 10 : 0);
+    const offlineCtx = new OfflineAudioContext(1, Math.ceil(sampleRate * Math.max(0.1, duration + 1)), sampleRate);
 
     const now = 0;
     
-    // Reproduce master chain in offline context
     const compressor = offlineCtx.createDynamicsCompressor();
     compressor.threshold.setValueAtTime(-12, now);
     compressor.ratio.setValueAtTime(12, now);
@@ -238,6 +239,18 @@ class AudioEngine {
     
     masterGain.connect(filter);
     filter.connect(compressor);
+
+    // Echo for export
+    if (params.echoAmount > 0) {
+      const delay = offlineCtx.createDelay(2.0);
+      delay.delayTime.setValueAtTime(params.echoDelay, now);
+      const feedback = offlineCtx.createGain();
+      feedback.gain.setValueAtTime(params.echoAmount * 0.8, now);
+      filter.connect(delay);
+      delay.connect(feedback);
+      feedback.connect(delay);
+      delay.connect(compressor);
+    }
 
     const env = offlineCtx.createGain();
     env.gain.setValueAtTime(0, now);
