@@ -56,6 +56,14 @@ export interface CompositionState {
   tracks: ComposerTrack[];
 }
 
+export interface SavedLoop {
+  id: string;
+  name: string;
+  state: CompositionState;
+  sounds: SoundParams[]; // Snapshot of sounds used in this composition
+  createdAt: number;
+}
+
 export const defaultSoundParams: SoundParams = {
   name: "New Sound",
   attack: 0.1,
