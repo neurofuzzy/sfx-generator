@@ -1,5 +1,9 @@
 # Polyphonic Debris: SoundSculptor
 
+<p align="center">
+  <img src="img/hero.png" alt="Polyphonic Debris SoundSculptor Hero Image" width="100%">
+</p>
+
 A next-generation retro game sound effects generator powered by **Genkit AI** and the **Web Audio API**. Sculpt unique audio assets for your games using natural language prompts or detailed synthesis controls.
 
 ## 🚀 [Try it Now: Live Demo](https://neurofuzzy.github.io/sfx-generator/)
