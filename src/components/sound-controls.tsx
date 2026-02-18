@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Waves, Activity, Radio, Wind, Volume2, Filter, ListMusic, Plus, Minus } from "lucide-react";
+import PresetsList from "./presets-list";
 
 interface SoundControlsProps {
   params: SoundParams;
@@ -363,7 +364,7 @@ export default function SoundControls({ params, setParams }: SoundControlsProps)
       </div>
 
       {/* Space */}
-      <div className="space-y-6 p-4 glass-panel rounded-2xl md:col-span-2 lg:col-span-1">
+      <div className="space-y-6 p-4 glass-panel rounded-2xl lg:col-span-1">
         <div className="flex items-center gap-2 mb-2">
           <Wind className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Space</h3>
@@ -407,6 +408,11 @@ export default function SoundControls({ params, setParams }: SoundControlsProps)
             />
           </div>
         </div>
+      </div>
+
+      {/* Library Panel (Integrated) */}
+      <div className="lg:col-span-2 min-h-[400px]">
+        <PresetsList currentParams={params} onUpdateParams={setParams} />
       </div>
     </div>
   );

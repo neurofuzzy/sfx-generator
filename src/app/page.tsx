@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +6,6 @@ import { audioEngine } from "@/lib/audio-engine";
 import SoundControls from "@/components/sound-controls";
 import AudioVisualizer from "@/components/audio-visualizer";
 import AiGenerator from "@/components/ai-generator";
-import PresetsList from "@/components/presets-list";
 import QuickPresets from "@/components/quick-presets";
 import { Button } from "@/components/ui/button";
 import { Play, Download, Headphones, Settings2, Share2, Github } from "lucide-react";
@@ -75,59 +73,46 @@ export default function SoundSculptorApp() {
       </header>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Left Panel: Library */}
-        <div className="xl:col-span-1 hidden xl:block h-[calc(100vh-250px)]">
-          <PresetsList currentParams={params} onUpdateParams={setParams} />
-        </div>
+      <main className="space-y-6">
+        <div className="flex flex-col gap-6">
+          {/* AI Generator Box */}
+          <AiGenerator onGenerated={setParams} />
 
-        {/* Center Panel: Controls & Visualizer */}
-        <main className="xl:col-span-3 space-y-6">
-          <div className="flex flex-col gap-6">
-            {/* AI Generator Box */}
-            <AiGenerator onGenerated={setParams} />
-
-            {/* Monitor & Global Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-              <div className="md:col-span-2">
-                <AudioVisualizer />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Button 
-                  size="lg" 
-                  className="w-full h-16 text-xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 rounded-2xl active:scale-95 transition-all"
-                  onClick={() => handlePlay()}
-                >
-                  <Play className="w-6 h-6 mr-2 fill-current" />
-                  PREVIEW
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="w-full h-12 font-bold border-accent/20 text-accent hover:bg-accent/10 rounded-xl"
-                  onClick={handleExport}
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  EXPORT .WAV
-                </Button>
-              </div>
+          {/* Monitor & Global Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <div className="md:col-span-2">
+              <AudioVisualizer />
             </div>
-
-            {/* Quick Game Presets Banner */}
-            <QuickPresets onSelect={handleSelectPreset} />
-
-            {/* Detailed Controls */}
-            <div className="space-y-4">
-               <SoundControls params={params} setParams={setParams} />
+            <div className="flex flex-col gap-3">
+              <Button 
+                size="lg" 
+                className="w-full h-16 text-xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 rounded-2xl active:scale-95 transition-all"
+                onClick={() => handlePlay()}
+              >
+                <Play className="w-6 h-6 mr-2 fill-current" />
+                PREVIEW
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="w-full h-12 font-bold border-accent/20 text-accent hover:bg-accent/10 rounded-xl"
+                onClick={handleExport}
+              >
+                <Download className="w-5 h-5 mr-2" />
+                EXPORT .WAV
+              </Button>
             </div>
           </div>
-        </main>
 
-        {/* Mobile Presets (Only visible on small screens) */}
-        <div className="xl:hidden h-96">
-          <PresetsList currentParams={params} onUpdateParams={setParams} />
+          {/* Quick Game Presets Banner */}
+          <QuickPresets onSelect={handleSelectPreset} />
+
+          {/* Detailed Controls & Library */}
+          <div className="space-y-4">
+              <SoundControls params={params} setParams={setParams} />
+          </div>
         </div>
-      </div>
+      </main>
 
       {!isInitialized && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
