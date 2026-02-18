@@ -65,6 +65,26 @@ export class SfxClient {
   }
 
   /**
+   * Plays a sound generated on-the-fly from an entropy seed.
+   * @param seed The numerical seed for the randomizer.
+   * @param volume Local volume multiplier.
+   * @param lowpassFreq Cutoff frequency override.
+   * @param pitchMultiplier Pitch multiplier.
+   */
+  async playSeed(seed: number, volume: number = 1.0, lowpassFreq?: number, pitchMultiplier: number = 1.0) {
+    await audioEngine.init();
+    
+    const params = audioEngine.generateParamsFromSeed(seed);
+    const activeParams: SoundParams = {
+      ...params,
+      filterCutoff: lowpassFreq !== undefined ? lowpassFreq : params.filterCutoff,
+      baseFrequency: params.baseFrequency * pitchMultiplier,
+    };
+
+    audioEngine.play(activeParams, 0, undefined, volume);
+  }
+
+  /**
    * Clears all registered sounds.
    */
   clearLibrary() {
