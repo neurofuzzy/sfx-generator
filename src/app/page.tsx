@@ -7,6 +7,7 @@ import SoundControls from "@/components/sound-controls";
 import AudioVisualizer from "@/components/audio-visualizer";
 import AiGenerator from "@/components/ai-generator";
 import PresetsList from "@/components/presets-list";
+import QuickPresets from "@/components/quick-presets";
 import { Button } from "@/components/ui/button";
 import { Play, Download, Headphones, Settings2, Share2, Github } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
@@ -25,8 +26,13 @@ export default function SoundSculptorApp() {
     return () => window.removeEventListener("click", handleFirstInteraction);
   }, []);
 
-  const handlePlay = () => {
-    audioEngine.play(params);
+  const handlePlay = (overriddenParams?: SoundParams) => {
+    audioEngine.play(overriddenParams || params);
+  };
+
+  const handleSelectPreset = (newParams: SoundParams) => {
+    setParams(newParams);
+    handlePlay(newParams);
   };
 
   const handleExport = async () => {
@@ -89,7 +95,7 @@ export default function SoundSculptorApp() {
                 <Button 
                   size="lg" 
                   className="w-full h-16 text-xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 rounded-2xl active:scale-95 transition-all"
-                  onClick={handlePlay}
+                  onClick={() => handlePlay()}
                 >
                   <Play className="w-6 h-6 mr-2 fill-current" />
                   PREVIEW
@@ -105,6 +111,9 @@ export default function SoundSculptorApp() {
                 </Button>
               </div>
             </div>
+
+            {/* Quick Game Presets Banner */}
+            <QuickPresets onSelect={handleSelectPreset} />
 
             {/* Detailed Controls */}
             <div className="space-y-4">
