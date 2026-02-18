@@ -2,11 +2,16 @@
 
 A next-generation retro game sound effects generator powered by **Genkit AI** and the **Web Audio API**. Sculpt unique audio assets for your games using natural language prompts or detailed synthesis controls.
 
+## 🚀 [Try it Now: Live Demo](https://neurofuzzy.github.io/sfx-generator/)
+
+---
+
 ## 🚀 Features
 
 - **AI-Powered Sculpting**: Describe a sound (e.g., "metallic laser with a heavy echo") and let Gemini 2.5 Flash generate the synthesis parameters.
 - **Advanced Synthesis Engine**:
   - **Oscillators**: Multiple waveforms (Sine, Square, Sawtooth, Triangle) with harmony and frequency drift.
+  - **Distortion (Crunch)**: A non-linear waveshaper to add grit, harmonic saturation, and power to your waveforms.
   - **Pitch Sequencer**: Create melodic progressions (up to 4 steps) for "ca-ching" coin sounds, power-ups, and more.
   - **Sculptor Filters**: Low-pass cutoff with resonance and a metallic **Comb Filter** for industrial textures.
   - **Envelopes**: Intuitive presets (Piano, Strings, Percussive, Reverse) to define the "feel" of your sound.
@@ -45,7 +50,8 @@ A next-generation retro game sound effects generator powered by **Genkit AI** an
 This project is configured for static export. To deploy to GitHub Pages:
 
 1. Push your code to a GitHub repository.
-2. The included GitHub Action (`.github/workflows/nextjs.yml`) will automatically build and deploy your site to the `gh-pages` branch.
-3. In your GitHub repository settings, under **Pages**, ensure the source is set to "GitHub Actions".
+2. Go to your repository **Settings > Pages**.
+3. Under **Build and deployment > Source**, change the dropdown to **GitHub Actions**.
+4. The included GitHub Action will automatically build and deploy your site.
 
-*Note: If hosting on a project subpath (e.g., `username.github.io/repo-name`), remember to set the `basePath` in `next.config.ts`.*
+*Note: The app automatically detects the `/sfx-generator/` base path during GitHub Actions builds.*
