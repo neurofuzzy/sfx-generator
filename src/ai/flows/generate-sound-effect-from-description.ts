@@ -24,8 +24,8 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
   decay: z
     .number()
     .min(0)
-    .max(1)
-    .describe('The decay time of the sound in seconds (0 to 1).'),
+    .max(2)
+    .describe('The decay time of the sound in seconds (0 to 2).'),
   envelopeShape: z
     .enum(['linear', 'exponential'])
     .describe('The shape of the volume envelope. Exponential is punchier, linear is mechanical.'),
@@ -97,9 +97,9 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
     .describe('Echo mix.'),
   echoDelay: z
     .number()
-    .min(0.01)
-    .max(2)
-    .describe('Echo delay time.'),
+    .min(0)
+    .max(0.5)
+    .describe('Echo delay time (0 to 0.5s).'),
 });
 export type GenerateSoundEffectFromDescriptionOutput = z.infer<typeof GenerateSoundEffectFromDescriptionOutputSchema>;
 

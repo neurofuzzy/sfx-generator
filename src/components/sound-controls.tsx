@@ -299,8 +299,8 @@ export default function SoundControls({ params, setParams }: SoundControlsProps)
             </div>
             <Slider
               value={[params.echoDelay]}
-              min={0.01}
-              max={2}
+              min={0}
+              max={0.5}
               step={0.01}
               onValueChange={([val]) => updateParam("echoDelay", val)}
             />
