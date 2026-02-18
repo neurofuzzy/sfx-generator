@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* Static export configuration for GitHub Pages */
   output: 'export',
   /* Set basePath for deployment to neurofuzzy.github.io/sfx-generator/ */
-  basePath: '/sfx-generator',
+  /* basePath: '/sfx-generator', */
   /* Images must be unoptimized for static hosting */
   images: {
     unoptimized: true,
