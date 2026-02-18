@@ -10,6 +10,7 @@ export interface SoundParams {
   decay: number;
   envelopeShape: EnvelopeShape;
   baseFrequency: number;
+  frequencyDrift: number; // Semitone offset over time (-24 to 24)
   harmony: number;
   quantize: number; // 0 for continuous, >0 for steps per octave
   timbre: string;
@@ -40,6 +41,7 @@ export const defaultSoundParams: SoundParams = {
   decay: 0.5,
   envelopeShape: 'piano',
   baseFrequency: 440,
+  frequencyDrift: 0,
   harmony: 0.5,
   quantize: 0,
   timbre: "bright",
@@ -66,12 +68,13 @@ export const GAME_PRESETS: SoundParams[] = [
   {
     ...defaultSoundParams,
     name: "Classic Laser",
-    baseFrequency: 1200,
+    baseFrequency: 1600,
+    frequencyDrift: -24, // Sharp downward slide for "pew"
     waveformPairs: ["sawtooth"],
     envelopeShape: "percussive",
-    decay: 0.25,
-    combAmount: 0.8,
-    combDelay: 0.002,
+    decay: 0.15,
+    combAmount: 0.6,
+    combDelay: 0.001,
     noiseModulation: 0.1,
     filterCutoff: 8000,
   },

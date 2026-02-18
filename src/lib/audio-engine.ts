@@ -154,6 +154,13 @@ class AudioEngine {
       osc.type = wf as OscillatorType;
       osc.frequency.setValueAtTime(finalFreq, time);
 
+      // Apply Frequency Drift
+      if (params.frequencyDrift !== 0) {
+        const driftMultiplier = Math.pow(2, params.frequencyDrift / 12);
+        const targetFreq = finalFreq * driftMultiplier;
+        osc.frequency.exponentialRampToValueAtTime(Math.max(1, targetFreq), time + duration);
+      }
+
       if (noiseModNode) {
         noiseModNode.connect(osc.frequency);
       }
@@ -219,7 +226,7 @@ class AudioEngine {
       const delay = this.ctx.createDelay(2.0);
       delay.delayTime.setValueAtTime(params.echoDelay, now);
       const feedback = this.ctx.createGain();
-      feedback.gain.setValueAtTime(params.echoAmount * 0.8, now);
+      feedback.gain.setValueAtTime(0.8, now); // Increased feedback for more repeats
       filter.connect(delay);
       delay.connect(feedback);
       feedback.connect(delay);
@@ -246,7 +253,7 @@ class AudioEngine {
   async exportToWav(params: SoundParams): Promise<Blob> {
     const sampleRate = 44100;
     const stepDuration = 60 / params.sequenceBpm;
-    const totalDuration = (params.sequenceSteps * stepDuration) + params.attack + params.decay + (params.echoAmount > 0 ? 2 : 0);
+    const totalDuration = (params.sequenceSteps * stepDuration) + params.attack + params.decay + (params.echoAmount > 0 ? 3 : 1);
     const offlineCtx = new OfflineAudioContext(1, Math.ceil(sampleRate * (totalDuration + 1)), sampleRate);
 
     const now = 0;
@@ -285,7 +292,7 @@ class AudioEngine {
       const delay = offlineCtx.createDelay(2.0);
       delay.delayTime.setValueAtTime(params.echoDelay, now);
       const feedback = offlineCtx.createGain();
-      feedback.gain.setValueAtTime(params.echoAmount * 0.8, now);
+      feedback.gain.setValueAtTime(0.8, now);
       filter.connect(delay);
       delay.connect(feedback);
       feedback.connect(delay);

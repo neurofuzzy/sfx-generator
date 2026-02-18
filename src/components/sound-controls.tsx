@@ -87,6 +87,19 @@ export default function SoundControls({ params, setParams }: SoundControlsProps)
               onValueChange={([val]) => updateParam("harmony", val)}
             />
           </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <Label>Freq Drift (Slide)</Label>
+              <span className="text-muted-foreground">{params.frequencyDrift > 0 ? '+' : ''}{params.frequencyDrift} semi</span>
+            </div>
+            <Slider
+              value={[params.frequencyDrift]}
+              min={-24}
+              max={24}
+              step={1}
+              onValueChange={([val]) => updateParam("frequencyDrift", val)}
+            />
+          </div>
         </div>
       </div>
 

@@ -18,6 +18,7 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
   decay: z.number().min(0).max(2),
   envelopeShape: z.enum(['piano', 'strings', 'percussive', 'reverse']),
   baseFrequency: z.number().min(20).max(20000),
+  frequencyDrift: z.number().min(-24).max(24).describe('Pitch slide in semitones over the duration of the note. Use negative for downward slides like "pew" or positive for rising sounds.'),
   harmony: z.number().min(0).max(1),
   quantize: z.number().min(0).max(48),
   timbre: z.string(),
@@ -49,8 +50,8 @@ const generateSoundEffectPrompt = ai.definePrompt({
 Description: {{{this}}}
 
 Guidelines:
+- "frequencyDrift": Use negative values (e.g., -12 to -24) for lasers, blasters, and "pew" sounds. Use positive values for "rising" or "swelling" pitch.
 - "sequenceSteps": Use 2-4 for sounds like "coin pickup" (ca-ching), "level up" (arpeggio), or "failed" (downward notes). Use 1 for single hits.
-- "sequenceOffsets": Set semitone shifts for the notes. e.g., [0, 5, 0, 0] for a 2-step jump, or [0, 4, 7, 12] for a major arpeggio.
 - "envelopeShape": 
     - "piano": Standard decay.
     - "strings": Slow, fading.
