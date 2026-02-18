@@ -31,6 +31,7 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
   quantize: z.number().min(0).max(48),
   timbre: z.string(),
   waveformPairs: z.array(z.enum(['sine', 'square', 'sawtooth', 'triangle'])).min(1).max(2),
+  distortion: z.number().min(0).max(1).describe('Amount of crunch, grit, or destruction added to the sound.'),
   noiseAmount: z.number().min(0).max(1),
   noiseType: z.enum(['white', 'pink', 'brown', 'velvet']),
   noiseModulation: z.number().min(0).max(1),
@@ -60,6 +61,7 @@ const generateSoundEffectPrompt = ai.definePrompt({
 Description: {{{this}}}
 
 Guidelines:
+- "distortion": Use high values (0.7-1.0) for "crunchy," "distorted," "aggressive," "crushed," or "destroyed" sounds.
 - "frequencyDrift": Use negative values (e.g., -12 to -24) for lasers, blasters, and "pew" sounds. Use positive values for "rising" or "swelling" pitch.
 - "sequenceSteps": Use 2-4 for sounds like "coin pickup" (ca-ching), "level up" (arpeggio), or "failed" (downward notes). Use 1 for single hits.
 - "lfoAmount" & "lfoRate": Use for "pulsating," "tremolo," "shimmering," or rhythmic volume pulses.

@@ -15,6 +15,7 @@ export interface SoundParams {
   quantize: number; // 0 for continuous, >0 for steps per octave
   timbre: string;
   waveformPairs: WaveformType[];
+  distortion: number;     // Crunch/Destroy amount (0 to 1)
   noiseAmount: number;
   noiseType: NoiseType;
   noiseModulation: number; // Jitters the oscillator frequency
@@ -48,6 +49,7 @@ export const defaultSoundParams: SoundParams = {
   quantize: 0,
   timbre: "bright",
   waveformPairs: ["sine"],
+  distortion: 0,
   noiseAmount: 0.1,
   noiseType: "white",
   noiseModulation: 0.2,
@@ -110,6 +112,7 @@ export const GAME_PRESETS: SoundParams[] = [
     filterCutoff: 400,
     filterResonance: 15,
     reverbAmount: 0.6,
+    distortion: 0.8,
   },
   {
     ...defaultSoundParams,
@@ -179,5 +182,6 @@ export const GAME_PRESETS: SoundParams[] = [
     decay: 0.1,
     filterCutoff: 2000,
     filterResonance: 8,
+    distortion: 0.3,
   },
 ];

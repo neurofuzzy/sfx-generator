@@ -4,7 +4,7 @@ import { SoundParams, WaveformType, NoiseType, EnvelopeShape } from "@/types/aud
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Waves, Activity, Radio, Wind, Volume2, Filter, ListMusic, Plus, Minus, Zap } from "lucide-react";
+import { Waves, Activity, Radio, Wind, Volume2, Filter, ListMusic, Plus, Minus, Zap, Flame } from "lucide-react";
 import PresetsList from "./presets-list";
 
 interface SoundControlsProps {
@@ -74,6 +74,24 @@ export default function SoundControls({ params, setParams }: SoundControlsProps)
               onValueChange={([val]) => updateParam("baseFrequency", val)}
             />
           </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-orange-500" />
+                <Label>Crunch (Distortion)</Label>
+              </div>
+              <span className="text-muted-foreground">{((params.distortion ?? 0) * 100).toFixed(0)}%</span>
+            </div>
+            <Slider
+              value={[params.distortion ?? 0]}
+              max={1}
+              step={0.01}
+              onValueChange={([val]) => updateParam("distortion", val)}
+              className="accent-orange-500"
+            />
+          </div>
+
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <Label>Harmony Offset</Label>

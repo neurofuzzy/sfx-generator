@@ -48,6 +48,18 @@ class AudioEngine {
     this.reverbBuffer = buffer;
   }
 
+  private makeDistortionCurve(amount: number) {
+    const k = amount * 400; // Increase the multiplier for more intense crunch
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+  }
+
   private quantizeFreq(freq: number, steps: number): number {
     if (steps === 0) return freq;
     const logFreq = Math.log2(freq / 440);
@@ -104,7 +116,7 @@ class AudioEngine {
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, time);
     
-    const peakLevel = 0.6 / (params.waveformPairs.length || 1);
+    const peakLevel = (0.6 / (params.waveformPairs.length || 1)) * (1 + (params.distortion ?? 0) * 1.5);
     const duration = params.attack + params.decay;
     
     if (params.envelopeShape === 'piano') {
@@ -121,7 +133,15 @@ class AudioEngine {
       env.gain.linearRampToValueAtTime(0.001, time + params.attack + 0.01);
     }
     
-    env.connect(destination);
+    // Distorter (Waveshaper)
+    const distorter = ctx.createWaveShaper();
+    if (params.distortion > 0) {
+      distorter.curve = this.makeDistortionCurve(params.distortion);
+      distorter.oversample = '4x';
+    }
+    
+    env.connect(distorter);
+    distorter.connect(destination);
 
     // Noise layer per note
     let noiseModNode: GainNode | null = null;
