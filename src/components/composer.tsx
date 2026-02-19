@@ -315,7 +315,14 @@ export default function Composer({ library: globalLibrary }: ComposerProps) {
             </div>
           </div>
 
-          <Button variant="ghost" size="sm" onClick={() => saveComp(INITIAL_COMPOSITION)} className="text-muted-foreground hover:text-destructive h-9 rounded-xl">
+          <Button variant="ghost" size="sm" onClick={() => saveComp({
+            ...INITIAL_COMPOSITION,
+            tracks: INITIAL_COMPOSITION.tracks.map(track => ({
+              ...track,
+              steps: [...track.steps],
+              stepNotes: [...track.stepNotes]
+            }))
+          })} className="text-muted-foreground hover:text-destructive h-9 rounded-xl">
             <Trash2 className="w-4 h-4 mr-2" />
             Clear Grid
           </Button>
