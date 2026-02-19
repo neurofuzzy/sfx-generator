@@ -9,7 +9,7 @@ interface QuickPresetsProps {
   onSelect: (params: SoundParams) => void;
 }
 
-const presetIcons: Record<string, any> = {
+const presetIcons: Record<string, React.ElementType> = {
   // Musical Instruments
   "Deep Kick": Drum,
   "Snare": Music,

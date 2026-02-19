@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { SoundParams, defaultSoundParams, GAME_PRESETS } from "@/types/audio";
 import { audioEngine } from "@/lib/audio-engine";
-import { encodeSoundParams, decodeSoundParams } from "@/lib/url-sharing";
+import { encodeSoundParams, decodeSoundParams } from "@/helpers/url-sharing";
 import SoundControls from "@/components/sound-controls";
 import AudioVisualizer from "@/components/audio-visualizer";
 import AiGenerator from "@/components/ai-generator";
@@ -12,16 +12,16 @@ import QuickPresets from "@/components/quick-presets";
 import Composer from "@/components/composer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Play, 
-  Download, 
-  Headphones, 
-  Share2, 
-  Github, 
-  LayoutGrid, 
-  Music, 
-  Copy, 
-  Check 
+import {
+  Play,
+  Download,
+  Headphones,
+  Share2,
+  Github,
+  LayoutGrid,
+  Music,
+  Copy,
+  Check
 } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +40,7 @@ export default function SoundSculptorApp() {
   const [masterVolume, setMasterVolume] = useState(1.0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [presets, setPresets] = useState<SoundParams[]>([]);
-  
+
   // Share Modal State
   const [shareUrl, setShareUrl] = useState("");
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -81,7 +81,7 @@ export default function SoundSculptorApp() {
       try {
         const parsed = JSON.parse(stored);
         setPresets([...GAME_PRESETS, ...parsed]);
-      } catch (e) {
+      } catch {
         setPresets(GAME_PRESETS);
       }
     } else {
@@ -95,7 +95,7 @@ export default function SoundSculptorApp() {
     };
     window.addEventListener("click", handleFirstInteraction);
     return () => window.removeEventListener("click", handleFirstInteraction);
-  }, []);
+  }, [toast]);
 
   const handlePlay = (overriddenParams?: SoundParams) => {
     audioEngine.play(overriddenParams || params);
@@ -152,7 +152,7 @@ export default function SoundSculptorApp() {
     });
   };
 
-  const handleTabChange = (value: string) => {
+  const handleTabChange = () => {
     audioEngine.stopAll();
   };
 
@@ -171,17 +171,17 @@ export default function SoundSculptorApp() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             className="rounded-full bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
             onClick={handleShare}
           >
             <Share2 className="w-4 h-4" />
           </Button>
-          <a 
-            href="https://github.com/neurofuzzy/sfx-generator" 
-            target="_blank" 
+          <a
+            href="https://github.com/neurofuzzy/sfx-generator"
+            target="_blank"
             rel="noopener noreferrer"
           >
             <Button variant="outline" size="icon" className="rounded-full">
@@ -213,17 +213,17 @@ export default function SoundSculptorApp() {
                   <AudioVisualizer />
                 </div>
                 <div className="flex flex-col gap-3">
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     className="w-full h-16 text-xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 rounded-2xl active:scale-95 transition-all"
                     onClick={() => handlePlay()}
                   >
                     <Play className="w-6 h-6 mr-2 fill-current" />
                     PREVIEW
                   </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
+                  <Button
+                    size="lg"
+                    variant="outline"
                     className="w-full h-12 font-bold border-accent/20 text-accent hover:bg-accent/10 rounded-xl"
                     onClick={handleExport}
                   >
@@ -234,22 +234,22 @@ export default function SoundSculptorApp() {
               </div>
 
               <Randomizer onRandomize={handleSelectPreset} />
-              
+
               <QuickPresets onSelect={handleSelectPreset} />
 
               <div className="space-y-4">
-                  <SoundControls 
-                    params={params} 
-                    setParams={handleUpdateParams} 
-                    masterVolume={masterVolume}
-                    setMasterVolume={handleUpdateMasterVolume}
-                    onPresetsChange={() => {
-                        const stored = localStorage.getItem("sound-presets");
-                        if (stored) {
-                            setPresets([...GAME_PRESETS, ...JSON.parse(stored)]);
-                        }
-                    }}
-                  />
+                <SoundControls
+                  params={params}
+                  setParams={handleUpdateParams}
+                  masterVolume={masterVolume}
+                  setMasterVolume={handleUpdateMasterVolume}
+                  onPresetsChange={() => {
+                    const stored = localStorage.getItem("sound-presets");
+                    if (stored) {
+                      setPresets([...GAME_PRESETS, ...JSON.parse(stored)]);
+                    }
+                  }}
+                />
               </div>
             </div>
           </main>
@@ -285,7 +285,7 @@ export default function SoundSculptorApp() {
             </Button>
           </div>
           <div className="mt-4 flex justify-end">
-             <Button variant="ghost" onClick={() => setIsShareModalOpen(false)} className="rounded-xl">Close</Button>
+            <Button variant="ghost" onClick={() => setIsShareModalOpen(false)} className="rounded-xl">Close</Button>
           </div>
         </DialogContent>
       </Dialog>

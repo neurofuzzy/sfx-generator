@@ -45,7 +45,7 @@ const reverseKeyMap = Object.fromEntries(
  */
 export function encodeSoundParams(params: SoundParams): string {
   const urlParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     const shortKey = reverseKeyMap[key as keyof SoundParams];
     if (!shortKey || value === undefined) return;
@@ -65,8 +65,9 @@ export function encodeSoundParams(params: SoundParams): string {
  */
 export function decodeSoundParams(search: string): Partial<SoundParams> {
   const params = new URLSearchParams(search);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: any = {};
-  
+
   for (const [shortKey, value] of params.entries()) {
     const fullKey = keyMap[shortKey];
     if (!fullKey) continue;
@@ -75,6 +76,7 @@ export function decodeSoundParams(search: string): Partial<SoundParams> {
       result[fullKey] = value.split(",");
     } else if (fullKey === "sequenceOffsets") {
       result[fullKey] = value.split(",").map(Number);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } else if (typeof (defaultSoundParams as any)[fullKey] === "number") {
       result[fullKey] = Number(value);
     } else {

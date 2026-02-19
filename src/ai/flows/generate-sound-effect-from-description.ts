@@ -5,8 +5,8 @@
  * - isAiConfigured - A function to check if the necessary API key is present.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 /**
  * Checks if the Google AI API key is configured in the environment.
@@ -54,14 +54,16 @@ const GenerateSoundEffectFromDescriptionOutputSchema = z.object({
 export type GenerateSoundEffectFromDescriptionOutput = z.infer<typeof GenerateSoundEffectFromDescriptionOutputSchema>;
 
 // Definitions are guarded for Node-only environment
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let generateSoundEffectFromDescriptionFlow: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let generateSoundEffectPrompt: any;
 
 if (typeof window === 'undefined' && ai) {
   generateSoundEffectPrompt = ai.definePrompt({
     name: 'generateSoundEffectPrompt',
-    input: {schema: GenerateSoundEffectFromDescriptionInputSchema},
-    output: {schema: GenerateSoundEffectFromDescriptionOutputSchema},
+    input: { schema: GenerateSoundEffectFromDescriptionInputSchema },
+    output: { schema: GenerateSoundEffectFromDescriptionOutputSchema },
     prompt: `You are an expert sound designer. Interpret the description and generate synthesis parameters.
 
 Description: {{{this}}}
@@ -80,7 +82,7 @@ Guidelines:
       outputSchema: GenerateSoundEffectFromDescriptionOutputSchema,
     },
     async (input: GenerateSoundEffectFromDescriptionInput) => {
-      const {output} = await generateSoundEffectPrompt(input);
+      const { output } = await generateSoundEffectPrompt(input);
       return output!;
     }
   );

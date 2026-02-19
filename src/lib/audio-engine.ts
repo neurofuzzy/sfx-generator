@@ -20,13 +20,14 @@ class AudioEngine {
   private analyser: AnalyserNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
   private reverbBuffer: AudioBuffer | null = null;
-  private compositionLoopInterval: any = null;
+  private compositionLoopInterval: NodeJS.Timeout | number | null = null;
   private activeNodes: Set<AudioScheduledSourceNode> = new Set();
   private continuousLoops: Map<string, { stop: () => void }> = new Map();
   private masterVolume: number = 1.0;
 
   async init() {
     if (!this.ctx) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
       if (!AudioContextClass) {
         console.error("Web Audio API not supported in this browser.");
@@ -409,7 +410,7 @@ class AudioEngine {
         activeGains = activeGains.filter(g => g !== masterGain);
         try {
           masterGain.disconnect();
-        } catch (e) { }
+        } catch { }
       }, cleanupTime * 1000);
     };
 
@@ -442,7 +443,7 @@ class AudioEngine {
       try {
         node.stop();
         node.disconnect();
-      } catch (e) { }
+      } catch { }
     });
     this.activeNodes.clear();
   }

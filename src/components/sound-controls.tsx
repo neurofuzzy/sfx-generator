@@ -16,6 +16,7 @@ interface SoundControlsProps {
 }
 
 export default function SoundControls({ params, setParams, masterVolume, setMasterVolume, onPresetsChange }: SoundControlsProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateParam = (key: keyof SoundParams, value: any) => {
     setParams({ ...params, [key]: value });
   };
@@ -62,7 +63,7 @@ export default function SoundControls({ params, setParams, masterVolume, setMast
             </Button>
           ))}
         </div>
-        
+
         <div className="space-y-4 pt-2 border-t border-white/5">
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
@@ -179,9 +180,9 @@ export default function SoundControls({ params, setParams, masterVolume, setMast
                     <Plus className="w-3 h-3" />
                   </Button>
                   <div className="h-24 w-full bg-white/5 rounded-lg flex flex-col justify-end p-1 relative overflow-hidden border border-white/5">
-                    <div 
-                      className="w-full bg-primary/40 rounded-sm transition-all" 
-                      style={{ height: `${((offset + 12) / 24) * 100}%` }} 
+                    <div
+                      className="w-full bg-primary/40 rounded-sm transition-all"
+                      style={{ height: `${((offset + 12) / 24) * 100}%` }}
                     />
                     <span className="absolute inset-0 flex items-center justify-center text-xs font-bold pointer-events-none">
                       {offset > 0 ? '+' : ''}{offset}
@@ -524,9 +525,9 @@ export default function SoundControls({ params, setParams, masterVolume, setMast
 
       {/* Library Panel (Integrated) */}
       <div className="lg:col-span-2 min-h-[400px]">
-        <PresetsList 
-          currentParams={params} 
-          onUpdateParams={setParams} 
+        <PresetsList
+          currentParams={params}
+          onUpdateParams={setParams}
           onPresetsChange={onPresetsChange}
         />
       </div>

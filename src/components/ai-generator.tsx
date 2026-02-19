@@ -23,7 +23,7 @@ export default function AiGenerator({ onGenerated }: AiGeneratorProps) {
       try {
         const available = await isAiConfigured();
         setIsVisible(available);
-      } catch (error) {
+      } catch {
         // In static export environments, the server action might fail entirely
         setIsVisible(false);
       }
@@ -41,6 +41,7 @@ export default function AiGenerator({ onGenerated }: AiGeneratorProps) {
         ...defaultSoundParams,
         ...result,
         name: prompt.length > 20 ? prompt.substring(0, 20) + "..." : prompt,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         waveformPairs: result.waveformPairs as any,
       });
       toast({
@@ -74,8 +75,8 @@ export default function AiGenerator({ onGenerated }: AiGeneratorProps) {
           onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
           disabled={loading}
         />
-        <Button 
-          onClick={handleGenerate} 
+        <Button
+          onClick={handleGenerate}
           disabled={loading || !prompt.trim()}
           className="rounded-xl h-12 px-6 bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20 transition-all active:scale-95 shrink-0"
         >

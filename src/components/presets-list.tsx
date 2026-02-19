@@ -57,7 +57,7 @@ export default function PresetsList({ currentParams, onUpdateParams, onPresetsCh
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-    
+
     toast({ title: "Library Exported", description: "Presets saved to JSON file" });
   };
 
@@ -75,7 +75,7 @@ export default function PresetsList({ currentParams, onUpdateParams, onPresetsCh
           saveToLocalStorage(unique);
           toast({ title: "Import Successful", description: `Added ${imported.length} presets to library` });
         }
-      } catch (err) {
+      } catch {
         toast({ variant: "destructive", title: "Import Failed", description: "Invalid JSON file" });
       }
     };
@@ -91,7 +91,7 @@ export default function PresetsList({ currentParams, onUpdateParams, onPresetsCh
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sound Identity</h3>
         </div>
         <div className="flex gap-2">
-          <Input 
+          <Input
             placeholder="Name your sound..."
             value={currentParams.name}
             onChange={(e) => onUpdateParams({ ...currentParams, name: e.target.value })}
@@ -109,30 +109,30 @@ export default function PresetsList({ currentParams, onUpdateParams, onPresetsCh
           Saved Library
         </h3>
         <div className="flex items-center gap-1">
-          <Button 
-            size="icon" 
-            variant="ghost" 
+          <Button
+            size="icon"
+            variant="ghost"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={exportLibrary}
             title="Export Library (JSON)"
           >
             <Download className="w-4 h-4" />
           </Button>
-          <Button 
-            size="icon" 
-            variant="ghost" 
+          <Button
+            size="icon"
+            variant="ghost"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={() => fileInputRef.current?.click()}
             title="Import Library (JSON)"
           >
             <Upload className="w-4 h-4" />
           </Button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={importLibrary} 
-            accept=".json" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={importLibrary}
+            accept=".json"
+            className="hidden"
           />
         </div>
       </div>
