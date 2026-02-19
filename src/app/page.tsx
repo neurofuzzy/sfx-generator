@@ -291,7 +291,7 @@ export default function SoundSculptorApp() {
       </Dialog>
 
       {!isInitialized && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center !m-0">
           <div className="text-center p-8 bg-card border rounded-3xl shadow-2xl max-w-sm mx-auto animate-in fade-in zoom-in duration-300">
             <Headphones className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />
             <h2 className="text-2xl font-bold mb-2">Initialize Audio</h2>
