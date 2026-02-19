@@ -9,6 +9,7 @@ import { audioEngine } from "./audio-engine";
  */
 export class SfxClient {
   private library: Map<string, SoundParams> = new Map();
+  private activeContinuousSounds: Set<string> = new Set();
 
   constructor(initialLibrary?: SoundParams[]) {
     if (initialLibrary) {
@@ -18,7 +19,7 @@ export class SfxClient {
 
   /**
    * Loads a JSON library of sound effects.
-   * @param json A JSON string or object containing an array of SoundParams.
+   * @param data A JSON string or object containing an array of SoundParams.
    */
   loadLibrary(data: string | SoundParams[]) {
     try {
@@ -50,18 +51,54 @@ export class SfxClient {
       return;
     }
 
-    // Initialize the engine on the first play call (browser requirement for user gesture)
     await audioEngine.init();
 
-    // Create a runtime variation for this specific trigger
     const activeParams: SoundParams = {
       ...params,
       filterCutoff: lowpassFreq !== undefined ? lowpassFreq : params.filterCutoff,
       baseFrequency: params.baseFrequency * pitchMultiplier,
     };
 
-    // Trigger playback through the synthesis engine
     audioEngine.play(activeParams, 0, undefined, volume);
+  }
+
+  /**
+   * Plays a sound continuously until stopped.
+   * Returns a unique ID that must be used to stop the sound.
+   * @param key The name of the sound to play.
+   * @param volume Local volume multiplier.
+   * @param lowpassFreq Cutoff frequency override.
+   * @param pitchMultiplier Pitch multiplier.
+   */
+  async playContinuous(key: string, volume: number = 1.0, lowpassFreq?: number, pitchMultiplier: number = 1.0): Promise<string> {
+    const params = this.library.get(key);
+    if (!params) {
+      console.warn(`SFX Client: Sound "${key}" not found.`);
+      return "";
+    }
+
+    await audioEngine.init();
+
+    const activeParams: SoundParams = {
+      ...params,
+      filterCutoff: lowpassFreq !== undefined ? lowpassFreq : params.filterCutoff,
+      baseFrequency: params.baseFrequency * pitchMultiplier,
+    };
+
+    const id = audioEngine.playContinuous(activeParams, volume);
+    if (id) {
+      this.activeContinuousSounds.add(id);
+    }
+    return id;
+  }
+
+  /**
+   * Stops a specific continuous sound by its ID.
+   * @param id The ID returned from playContinuous.
+   */
+  stop(id: string) {
+    audioEngine.stopContinuous(id);
+    this.activeContinuousSounds.delete(id);
   }
 
   /**
@@ -99,12 +136,12 @@ export class SfxClient {
   }
 
   /**
-   * Stops all active audio nodes immediately.
+   * Stops all active audio nodes and continuous loops immediately.
    */
   stopAll() {
     audioEngine.stopAll();
+    this.activeContinuousSounds.clear();
   }
 }
 
-// Export a singleton instance for standard use cases
 export const sfx = new SfxClient();

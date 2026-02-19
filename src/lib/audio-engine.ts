@@ -5,7 +5,7 @@ import { SoundParams, WaveformType, NoiseType, CompositionState, defaultSoundPar
  */
 const NOTE_FREQUENCIES: Record<string, number> = {
   "C3": 130.81, "C#3": 138.59, "D3": 146.83, "D#3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "G3": 196.00, "G#3": 207.65, "A3": 220.00, "A#3": 233.08, "B3": 246.94,
-  "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "G#4": 415.30, "A4": 440.00, "A#4": 466.16, "B4": 493.88,
+  "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "E4": 329.63, "F4": 349.23, "F#3": 369.99, "G4": 392.00, "G#4": 415.30, "A4": 440.00, "A#4": 466.16, "B4": 493.88,
   "C5": 523.25, "C#5": 554.37, "D5": 587.33, "D#5": 622.25, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "G#5": 830.61, "A5": 880.00, "A#5": 932.33, "B5": 987.77,
 };
 
@@ -22,11 +22,11 @@ class AudioEngine {
   private reverbBuffer: AudioBuffer | null = null;
   private compositionLoopInterval: any = null;
   private activeNodes: Set<AudioScheduledSourceNode> = new Set();
+  private continuousLoops: Map<string, { stop: () => void }> = new Map();
   private masterVolume: number = 1.0;
 
   async init() {
     if (!this.ctx) {
-      // Use standard AudioContext
       const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
       if (!AudioContextClass) {
         console.error("Web Audio API not supported in this browser.");
@@ -38,7 +38,6 @@ class AudioEngine {
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 2048;
       
-      // Warm, punchy master compression settings
       this.compressor.threshold.setValueAtTime(-12, this.ctx.currentTime);
       this.compressor.knee.setValueAtTime(30, this.ctx.currentTime);
       this.compressor.ratio.setValueAtTime(12, this.ctx.currentTime);
@@ -64,9 +63,6 @@ class AudioEngine {
     return this.analyser;
   }
 
-  /**
-   * Generates sound parameters from a numerical seed (Entropy Engine).
-   */
   generateParamsFromSeed(seed: number): SoundParams {
     const nextRand = this.mulberry32(seed);
     const pick = <T,>(arr: T[]): T => arr[Math.floor(nextRand() * arr.length)];
@@ -131,7 +127,6 @@ class AudioEngine {
     for (let channel = 0; channel < 2; channel++) {
       const data = buffer.getChannelData(channel);
       for (let i = 0; i < length; i++) {
-        // High-quality white noise decay for natural reverb feel
         data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.5);
       }
     }
@@ -211,7 +206,6 @@ class AudioEngine {
     const peakLevel = (0.6 / (params.waveformPairs.length || 1)) * (1 + (params.distortion ?? 0) * 1.5) * gainScale;
     const duration = params.attack + params.decay;
     
-    // Envelope logic
     if (params.envelopeShape === 'piano') {
       env.gain.exponentialRampToValueAtTime(peakLevel, time + Math.max(0.001, params.attack));
       env.gain.exponentialRampToValueAtTime(0.001, time + duration);
@@ -235,7 +229,6 @@ class AudioEngine {
     env.connect(distorter);
     distorter.connect(destination);
 
-    // Noise layer
     if (params.noiseAmount > 0) {
       const noiseSource = ctx.createBufferSource();
       noiseSource.buffer = this.createNoiseBuffer(params.noiseType);
@@ -249,7 +242,6 @@ class AudioEngine {
       this.trackNode(noiseSource);
     }
 
-    // Oscillators
     params.waveformPairs.forEach((wf, index) => {
       let finalFreq = freq * (index === 1 ? (1 + params.harmony) : 1);
       finalFreq = this.quantizeFreq(finalFreq, params.quantize);
@@ -258,13 +250,11 @@ class AudioEngine {
       osc.type = wf as OscillatorType;
       osc.frequency.setValueAtTime(finalFreq, time);
 
-      // Pitch glide/slide
       if (params.frequencyDrift !== 0) {
         const driftMultiplier = Math.pow(2, params.frequencyDrift / 12);
         osc.frequency.exponentialRampToValueAtTime(Math.max(1, finalFreq * driftMultiplier), time + duration);
       }
 
-      // Vibrato (Frequency Modulation)
       if (params.vibratoDepth > 0) {
         const lfo = ctx.createOscillator();
         const lfoGain = ctx.createGain();
@@ -284,16 +274,14 @@ class AudioEngine {
     });
   }
 
-  play(params: SoundParams, timeOffset: number = 0, frequencyOverride?: number, volumeMultiplier: number = 1.0) {
-    if (!this.ctx || !this.compressor) return;
-
+  private playInternal(params: SoundParams, timeOffset: number, frequencyOverride: number | undefined, volumeMultiplier: number, destination: AudioNode): { duration: number } {
+    if (!this.ctx) return { duration: 0 };
     const now = this.ctx.currentTime + timeOffset;
     const baseFreq = frequencyOverride || params.baseFrequency;
     
-    const masterGain = this.ctx.createGain();
-    masterGain.gain.setValueAtTime(0.75 * this.masterVolume * volumeMultiplier, now);
+    const sequenceGain = this.ctx.createGain();
+    sequenceGain.gain.setValueAtTime(1.0, now);
 
-    // Amplitude Modulation (LFO/Tremolo)
     const lfoVca = this.ctx.createGain();
     lfoVca.gain.setValueAtTime(1.0, now);
     if (params.lfoAmount > 0) {
@@ -310,7 +298,6 @@ class AudioEngine {
       this.trackNode(lfo);
     }
     
-    // Filters & Space
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     const cutoffFreq = params.filterCutoff === 0 ? 20000 : Math.max(20, params.filterCutoff);
@@ -323,7 +310,7 @@ class AudioEngine {
     combDelay.delayTime.setValueAtTime(Math.max(0.0001, params.combDelay), now);
     combFeedback.gain.setValueAtTime(params.combAmount, now);
 
-    masterGain.connect(lfoVca);
+    sequenceGain.connect(lfoVca);
     lfoVca.connect(combSum);
     combSum.connect(filter);
 
@@ -333,7 +320,7 @@ class AudioEngine {
       combFeedback.connect(combSum);
     }
     
-    filter.connect(this.compressor);
+    filter.connect(destination);
 
     if (params.reverbAmount > 0 && this.reverbBuffer) {
       const reverb = this.ctx.createConvolver();
@@ -342,7 +329,7 @@ class AudioEngine {
       reverbGain.gain.value = params.reverbAmount * 0.5;
       filter.connect(reverb);
       reverb.connect(reverbGain);
-      reverbGain.connect(this.compressor);
+      reverbGain.connect(destination);
     }
 
     if (params.echoAmount > 0) {
@@ -353,10 +340,9 @@ class AudioEngine {
       filter.connect(delay);
       delay.connect(feedback);
       feedback.connect(delay);
-      delay.connect(this.compressor);
+      delay.connect(destination);
     }
 
-    // Sequencer (Arpeggiator)
     const stepDuration = 60 / params.sequenceBpm;
     let sequence: number[] = [];
     const baseOffsets = params.sequenceOffsets.slice(0, params.sequenceSteps);
@@ -372,18 +358,86 @@ class AudioEngine {
 
     sequence.forEach((offset, i) => {
       const freq = baseFreq * Math.pow(2, offset / 12);
-      this.triggerNote(this.ctx!, now + i * stepDuration, freq, params, masterGain);
+      this.triggerNote(this.ctx!, now + i * stepDuration, freq, params, sequenceGain);
     });
 
-    const cleanupTime = (sequence.length * stepDuration) + params.attack + params.decay + 5;
+    return { duration: sequence.length * stepDuration };
+  }
+
+  play(params: SoundParams, timeOffset: number = 0, frequencyOverride?: number, volumeMultiplier: number = 1.0) {
+    if (!this.ctx || !this.compressor) return;
+
+    const masterGain = this.ctx.createGain();
+    masterGain.gain.setValueAtTime(0.75 * this.masterVolume * volumeMultiplier, this.ctx.currentTime + timeOffset);
+    masterGain.connect(this.compressor);
+
+    const { duration } = this.playInternal(params, timeOffset, frequencyOverride, volumeMultiplier, masterGain);
+
+    const cleanupTime = duration + params.attack + params.decay + 5;
     setTimeout(() => {
       masterGain.disconnect();
-      filter.disconnect();
-    }, cleanupTime * 1000);
+    }, (timeOffset + cleanupTime) * 1000);
+  }
+
+  playContinuous(params: SoundParams, volumeMultiplier: number = 1.0): string {
+    if (!this.ctx || !this.compressor) return "";
+    const id = Math.random().toString(36).substring(7);
+    
+    const loopParams = { ...params, playbackMode: 'once' as PlaybackMode, loopCount: 1 };
+    const stepDuration = 60 / params.sequenceBpm;
+    const iterationDuration = params.sequenceSteps * stepDuration;
+    
+    let isPlaying = true;
+    let activeGains: GainNode[] = [];
+
+    const trigger = () => {
+      if (!isPlaying || !this.ctx || !this.compressor) return;
+      
+      const masterGain = this.ctx.createGain();
+      masterGain.gain.setValueAtTime(0.75 * this.masterVolume * volumeMultiplier, this.ctx.currentTime);
+      masterGain.connect(this.compressor);
+      activeGains.push(masterGain);
+
+      this.playInternal(loopParams, 0, undefined, volumeMultiplier, masterGain);
+      
+      // Schedule next trigger
+      setTimeout(trigger, iterationDuration * 1000);
+      
+      // Cleanup this gain node after the arpeggio and tail are done
+      const cleanupTime = iterationDuration + params.attack + params.decay + 5;
+      setTimeout(() => {
+        activeGains = activeGains.filter(g => g !== masterGain);
+        try {
+          masterGain.disconnect();
+        } catch (e) {}
+      }, cleanupTime * 1000);
+    };
+
+    trigger();
+
+    this.continuousLoops.set(id, {
+      stop: () => {
+        // Simply set isPlaying to false.
+        // The current iteration triggered by playInternal will finish naturally 
+        // because the oscillators have their own stop() times and envelopes.
+        isPlaying = false;
+        this.continuousLoops.delete(id);
+      }
+    });
+
+    return id;
+  }
+
+  stopContinuous(id: string) {
+    const loop = this.continuousLoops.get(id);
+    if (loop) {
+      loop.stop();
+    }
   }
 
   stopAll() {
     this.stopComposition();
+    this.continuousLoops.forEach(loop => loop.stop());
     this.activeNodes.forEach(node => {
       try {
         node.stop();
